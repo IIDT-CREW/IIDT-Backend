@@ -1,31 +1,53 @@
 const dbHelpers = require('./mysqlHelpersPromise');
 
-/* 회원 가입  */
-const getWill = async (parameter) => {
-  const mem_username = parameter.mem_username;
-  const mem_userid = parameter.mem_userid;
-  const mem_email = parameter.mem_email;
-  const mem_password = parameter.mem_password;
-  const mem_social = parameter.mem_social;
+const insertWill = async (parameter) => {
+  const title = parameter.title;
+  const content = parameter.content;
+  const thumbnail = parameter.thumbnail;
+  const mem_idx = parameter.mem_idx;
+  const will_id = parameter.will_id;
 
-  const signUpSql = `
-  INSERT INTO IIDT_MEMBER (MEM_USERNAME, MEM_USERID, MEM_EMAIL, MEM_PASSWORD, MEM_SOCIAL) 
-  VALUES (?, ?, ?, ?, ?)
+  const insertWillSql = `
+  INSERT INTO WILL (TITLE, CONTENT, THUMBNAIL, REG_DATE, IS_PRIVATE, MEM_IDX, WILL_ID ) 
+  VALUES (?, ?, ?, now(), false, ?, ? );
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
     //await connection.beginTransaction(); // START TRANSACTION
-    let [memberInfo] = await connection.query(signUpSql, [
-      mem_username,
-      mem_userid,
-      mem_email,
-      mem_password,
-      mem_social,
+    let [insertWillInfo] = await connection.query(insertWillSql, [
+      title,
+      content,
+      thumbnail,
+      mem_idx,
+      will_id,
     ]);
     await connection.commit(); // COMMIT
     connection.release();
     console.log('success Query SELECT');
-    return memberInfo;
+    return insertWillInfo;
+  } catch (err) {
+    await connection.rollback(); // ROLLBACK
+    connection.release();
+    console.log('Query Error', err);
+    return false;
+  }
+};
+
+const getWill = async (parameter) => {
+  const will_id = parameter.will_id;
+  const getWillSql = `
+    select *
+    from WILL
+    WHERE WILL_ID = ?
+  `;
+  const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+  try {
+    //await connection.beginTransaction(); // START TRANSACTION
+    let [willInfo] = await connection.query(getWillSql, [will_id]);
+    await connection.commit(); // COMMIT
+    connection.release();
+    console.log('success Query SELECT');
+    return willInfo[0];
   } catch (err) {
     await connection.rollback(); // ROLLBACK
     connection.release();
@@ -35,5 +57,6 @@ const getWill = async (parameter) => {
 };
 
 module.exports = {
-  getLoginData: getLoginData,
+  getWill: getWill,
+  insertWill: insertWill,
 };

@@ -7,6 +7,7 @@ require('moment-timezone');
 let bodyParser = require('body-parser');
 let indexRouter = require('./routes/index');
 let authRouter = require('./routes/api/authController');
+let willRouter = require('./routes/api/willController');
 // let corsOption = {
 //   origin: 'http://localhost:3030',
 //   credentials: true,
@@ -36,7 +37,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/api/oauth', authRouter);
-
+app.use('/api/will', willRouter);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
