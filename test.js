@@ -10,5 +10,5 @@ const client = redis.createClient();
 
   await client.set('key', 'value');
   const value = await client.get('key');
-  console.log(value);
+  //console.log(value);
 })();

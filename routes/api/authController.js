@@ -25,7 +25,7 @@ class Kakao {
     this.url = 'https://kauth.kakao.com/oauth/token';
     this.clientID = process.env.KAKAO_CLIENT_ID;
     this.clientSecret = process.env.KAKAO_CLIENT_SECRET;
-    this.redirectUri = 'http://localhost:3031/oauth/kakao';
+    this.redirectUri = 'http://localhost:3001/oauth/callback/kakao';
     this.code = code;
     // userInfo
     this.userInfoUrl = 'https://kapi.kakao.com/v2/user/me';
@@ -114,18 +114,18 @@ const getUserInfo = async (method, url, access_token) => {
   }
 };
 
-async function signUp({ id, email, social, isExist }) {
+async function signUp({ id, email, nickname, social, isExist }) {
   let jwtToken = null;
   let refreshToken = null;
   if (!isExist) {
-    console.log('가입되지 않은 회원입니다.');
+    console.log('[signUp] 가입되지 않은 회원입니다.');
     //회원 가입후 토큰 발급
     const userData = {
       mem_username: '',
       mem_userid: id,
       mem_email: email,
-      mem_password: '',
       mem_social: social,
+      mem_nickname: nickname,
     };
     const signUpResponse = await authDaoNew.setMemberSignUp(userData);
 
@@ -138,15 +138,15 @@ async function signUp({ id, email, social, isExist }) {
       refreshToken = jwt.refresh();
     }
   } else {
-    console.log('가입된  회원입니다.');
+    console.log('[signUp] 가입된  회원입니다.');
     jwtToken = jwt.sign({
       id: id,
       email: email,
     });
     refreshToken = jwt.refresh();
   }
-  console.log('accessToken =', jwtToken);
-  console.log('refreshToken =', refreshToken);
+  console.log('[signUp] accessToken =', jwtToken);
+  console.log('[signUp] refreshToken =', refreshToken);
   return { jwtToken, refreshToken };
 }
 
@@ -191,7 +191,7 @@ function returnResponse({ res, jwtToken, refreshToken }) {
     refreshToken,
   };
 
-  console.log('responseData = ', responseData);
+  //console.log('responseData = ', responseData);
   return responseData;
 }
 /* 소셜 로그인시 
@@ -225,9 +225,9 @@ router.get('/callback/:coperation', async (req, res) => {
         break;
     }
 
-    console.log('options= ', options);
+    // console.log('options= ', options);
     const tokenInfo = await getAccessToken(options);
-    console.log('token = ', tokenInfo);
+    // console.log('token = ', tokenInfo);
 
     if (!tokenInfo) return;
     if (coperation === 'google')
@@ -238,25 +238,24 @@ router.get('/callback/:coperation', async (req, res) => {
       options.userInfoUrl,
       tokenInfo.access_token,
     );
-    console.log('userInfo = ', userInfo);
+    // console.log('userInfo = ', userInfo);
 
     //로그인 되었 을 경우
     if (userInfo) {
       if (coperation === 'naver') {
-        console.log('userInfo ', userInfo);
         const { resultcode, reason, response } = userInfo;
         if (resultcode === '00' && reason === 'success') {
           //1. 회원가입 여부 확인
           const memberRow = await authDaoNew.getEmailIsAlreadyExist(email);
           const { EXISTFLAG } = memberRow[0];
-          console.log('member log', memberRow);
           let jwtToken = null;
           let refreshToken = null;
           //회원 가입 안되어있을시
-          if (EXISTFLAG !== 'EXIST') {
+          if (EXISTFLAG === 'NONE') {
             let { jwtToken: access, refreshToken: refresh } = await signUp({
               id,
               email,
+              nickname: '',
               social: 'naver',
               isExist: false,
             });
@@ -266,6 +265,7 @@ router.get('/callback/:coperation', async (req, res) => {
             let { jwtToken: access, refreshToken: refresh } = await signUp({
               id,
               email,
+              nickname: '',
               social: 'naver',
               isExist: true,
             });
@@ -273,26 +273,39 @@ router.get('/callback/:coperation', async (req, res) => {
             refreshToken = refresh;
           }
           // 발급한 refresh token을 redis에 key를 user의 id로 하여 저장합니다.
-          await redisClient.set(email, refreshToken);
+          await redisClient.set(`${id}_${email}`, refreshToken);
           const makedResponse = returnResponse({ res, jwtToken, refreshToken });
           res.json(makedResponse);
         }
       }
 
       if (coperation === 'kakao') {
+        console.log('[kakao] 로그인을 진행합니다.');
         const { kakao_account, id } = userInfo;
         if (id && kakao_account) {
+          console.log('[kakao] id, kakao_account 존재합니다.');
           //1. 회원가입 여부 확인
-          const memberRow = await authDaoNew.getEmailIsAlreadyExist(email);
+          const { profile, email, has_email } = kakao_account;
+          const memberRow = await authDaoNew.getEmailIsAlreadyExist(
+            email,
+            has_email,
+            'kakao',
+            id,
+          );
+          console.log(
+            '[kakao] 회원가입 여부 확인합니다 memberRow = ',
+            memberRow,
+          );
           const { EXISTFLAG } = memberRow[0];
-          console.log('member log', memberRow);
+          console.log("'[kakao] EXISTFLAG = ", EXISTFLAG);
           let jwtToken = null;
           let refreshToken = null;
           //회원 가입 안되어있을시
-          if (EXISTFLAG !== 'EXIST') {
+          if (EXISTFLAG === 'NONE') {
             let { jwtToken: access, refreshToken: refresh } = await signUp({
               id,
-              email: '',
+              email,
+              nickname: profile.nickname,
               social: 'kakao',
               isExist: false,
             });
@@ -301,15 +314,18 @@ router.get('/callback/:coperation', async (req, res) => {
           } else if (EXISTFLAG === 'EXIST') {
             let { jwtToken: access, refreshToken: refresh } = await signUp({
               id,
-              email: '',
+              email,
+              nickname: profile.nickname,
               social: 'kakao',
               isExist: true,
             });
             jwtToken = access;
             refreshToken = refresh;
           }
+
           // 발급한 refresh token을 redis에 key를 user의 id로 하여 저장합니다.
-          await redisClient.set(email, refreshToken);
+          if (refreshToken)
+            await redisClient.set(`${id}_${email}`, refreshToken);
           const makedResponse = returnResponse({ res, jwtToken, refreshToken });
           res.json(makedResponse);
         }
@@ -323,10 +339,11 @@ router.get('/callback/:coperation', async (req, res) => {
           let jwtToken = null;
           let refreshToken = null;
           //회원 가입 안되어있을시
-          if (EXISTFLAG !== 'EXIST') {
+          if (EXISTFLAG === 'NONE') {
             let { jwtToken: access, refreshToken: refresh } = await signUp({
               id,
               email,
+              nickname: '',
               social: 'google',
               isExist: false,
             });
@@ -336,6 +353,7 @@ router.get('/callback/:coperation', async (req, res) => {
             let { jwtToken: access, refreshToken: refresh } = await signUp({
               id,
               email,
+              nickname: '',
               social: 'google',
               isExist: true,
             });
@@ -347,10 +365,10 @@ router.get('/callback/:coperation', async (req, res) => {
 
           //id 값이 중복되는 것을 방지하기 위해
           //id_social값을 key로 사용한다.
-          await redisClient.set(email, refreshToken);
+          await redisClient.set(`${id}_${email}`, refreshToken);
 
           const makedResponse = returnResponse({ res, jwtToken, refreshToken });
-          console.log('makedResponse= ', makedResponse);
+          // console.log('makedResponse= ', makedResponse);
           res.json(makedResponse);
         }
       }
@@ -371,7 +389,7 @@ checkValidationPassword = (password, res) => {
 };
 
 router.get('/test-refresh', async (req, res) => {
-  console.log('hello~');
+  // console.log('hello~');
   res.status(401).json('crash');
 });
 
@@ -398,13 +416,16 @@ router.get('/logout', async (req, res) => {
 
 router.get('/userInfo', async (req, res) => {
   const authorization = await authorizationRequest(req);
-  console.log('authorization = ', authorization);
+  console.log('[userInfo] authorization = ', authorization);
   if (authorization.ok) {
-    console.log(authorization.decoded);
+    //...todo 이메일이 없을 경우도
+    if (authorization.decoded.email === '') {
+      console.log('[userInfo] 이메일이 없습니다.');
+    }
     const memberRow = await authDaoNew.getLoginData(
       authorization.decoded.email,
     );
-    console.log('memberRow = ', memberRow);
+    console.log('[userInfo] getLoginData = ', memberRow);
     if (memberRow[0]) {
       let responseData = {
         code: API_CODE.SUCCESS,
@@ -414,12 +435,13 @@ router.get('/userInfo', async (req, res) => {
       res.json(responseData);
       return;
     }
+  } else {
+    res.json({
+      code: API_CODE.INVALID_TOKEN,
+      reason: resMessage.INVALID_TOKEN,
+      result: '',
+    });
   }
-  res.json({
-    code: API_CODE.INVALID_TOKEN,
-    reason: resMessage.INVALID_TOKEN,
-    result: '',
-  });
 });
 /* 
   profile
