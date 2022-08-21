@@ -1,5 +1,56 @@
 const dbHelpers = require('./mysqlHelpersPromise');
 
+const getWill = async (parameter) => {
+  const will_id = parameter.will_id;
+  const getWillSql = `
+    select *
+    from WILL
+    WHERE WILL_ID = ?
+  `;
+  const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+  try {
+    //await connection.beginTransaction(); // START TRANSACTION
+    let [willInfo] = await connection.query(getWillSql, [will_id]);
+    await connection.commit(); // COMMIT
+    connection.release();
+    console.log('success Query SELECT');
+    return willInfo[0];
+  } catch (err) {
+    await connection.rollback(); // ROLLBACK
+    connection.release();
+    console.log('Query Error', err);
+    return false;
+  }
+};
+
+const getMyWill = async (parameter) => {
+  const mem_userid = parameter.mem_userid;
+
+  const getMyWillSql = `
+    SELECT *
+    FROM WILL
+    WHERE MEM_IDX = (
+        SELECT MEM_IDX
+        FROM IIDT_MEMBER
+        WHERE MEM_USERID = ?
+    )
+  `;
+  const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+  try {
+    //await connection.beginTransaction(); // START TRANSACTION
+    let [willInfo] = await connection.query(getMyWillSql, [mem_userid]);
+    await connection.commit(); // COMMIT
+    connection.release();
+    console.log('success Query SELECT');
+    return willInfo;
+  } catch (err) {
+    await connection.rollback(); // ROLLBACK
+    connection.release();
+    console.log('Query Error', err);
+    return false;
+  }
+};
+
 const insertWill = async (parameter) => {
   const title = parameter.title;
   const content = parameter.content;
@@ -33,11 +84,10 @@ const insertWill = async (parameter) => {
   }
 };
 
-const getWill = async (parameter) => {
+const deleteWill = async (parameter) => {
   const will_id = parameter.will_id;
   const getWillSql = `
-    select *
-    from WILL
+    DELETE FROM WILL
     WHERE WILL_ID = ?
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
@@ -56,7 +106,10 @@ const getWill = async (parameter) => {
   }
 };
 
+//todo edit
 module.exports = {
   getWill: getWill,
+  getMyWill: getMyWill,
+  deleteWill: deleteWill,
   insertWill: insertWill,
 };
