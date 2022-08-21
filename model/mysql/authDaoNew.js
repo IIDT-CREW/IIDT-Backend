@@ -86,6 +86,7 @@ const getLoginData = async (mem_email) => {
   let loginSql = `
       SELECT 
       MEM_IDX, 
+      MEM_USERID,
       MEM_EMAIL ,
       MEM_USERNAME, 
       MEM_NICKNAME,
