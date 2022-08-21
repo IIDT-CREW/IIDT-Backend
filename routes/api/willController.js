@@ -7,6 +7,29 @@ const willDao = require('../../model/mysql/willDao');
 const { API_CODE } = require('../../lib/statusCode');
 const resMessage = require('../../lib/resMessage');
 
+//
+router.get('/getWillCount', async (req, res) => {
+  try {
+    const willInfo = await willDao.getWillCount();
+    console.log('willInfo = ', willInfo);
+    const responseData = helpers.returnResponse(
+      API_CODE.SUCCESS,
+      resMessage.SUCCESS,
+      willInfo[0].COUNT,
+    );
+    console.log('responseData', responseData);
+    res.json(responseData);
+  } catch (e) {
+    console.log(e);
+    const responseData = helpers.returnResponse(
+      API_CODE.INTERNAL_ERROR,
+      resMessage.INTERNAL_ERROR,
+      null,
+    );
+    res.json(responseData);
+  }
+});
+
 //내가 작성한 유서 가져오기
 //...todo auth 추가
 router.get('/getMyWill', async (req, res) => {

@@ -1,5 +1,26 @@
 const dbHelpers = require('./mysqlHelpersPromise');
 
+const getWillCount = async () => {
+  const getWillSql = `
+    SELECT count(*) AS COUNT
+    FROM WILL
+  `;
+  const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+  try {
+    //await connection.beginTransaction(); // START TRANSACTION
+    let [willInfo] = await connection.query(getWillSql);
+    await connection.commit(); // COMMIT
+    connection.release();
+    console.log('success Query SELECT');
+    return willInfo;
+  } catch (err) {
+    await connection.rollback(); // ROLLBACK
+    connection.release();
+    console.log('Query Error', err);
+    return false;
+  }
+};
+
 const getWill = async (parameter) => {
   const will_id = parameter.will_id;
   const getWillSql = `
@@ -59,8 +80,8 @@ const insertWill = async (parameter) => {
   const will_id = parameter.will_id;
 
   const insertWillSql = `
-  INSERT INTO WILL (TITLE, CONTENT, THUMBNAIL, REG_DATE, IS_PRIVATE, MEM_IDX, WILL_ID ) 
-  VALUES (?, ?, ?, now(), false, ?, ? );
+    INSERT INTO WILL (TITLE, CONTENT, THUMBNAIL, REG_DATE, IS_PRIVATE, MEM_IDX, WILL_ID ) 
+    VALUES (?, ?, ?, now(), false, ?, ? );
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
@@ -112,4 +133,5 @@ module.exports = {
   getMyWill: getMyWill,
   deleteWill: deleteWill,
   insertWill: insertWill,
+  getWillCount: getWillCount,
 };

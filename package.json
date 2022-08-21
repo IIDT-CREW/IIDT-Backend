@@ -29,6 +29,7 @@
     "mysql2": "2.3.3",
     "nanoid": "4.0.0",
     "node-cache": "5.1.2",
+    "node-fetch": "2.6.7",
     "nodemon": "2.0.4",
     "redis": "4.2.0",
     "request": "^2.88.2",
