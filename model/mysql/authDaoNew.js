@@ -117,8 +117,89 @@ const getLoginData = async (mem_email) => {
   }
 };
 
+const getRefreshData = async (mem_email) => {
+  let loginSql = `
+      SELECT ID, EXPIRED_TIME
+      FROM REFRESH
+      WHERE ID = "1";
+    `;
+
+  try {
+    const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+    try {
+      //await connection.beginTransaction(); // START TRANSACTION
+      let [memberInfo] = await connection.query(loginSql, [mem_email]);
+      await connection.commit(); // COMMIT
+      connection.release();
+      console.log('success Query SELECT');
+      return memberInfo;
+    } catch (err) {
+      await connection.rollback(); // ROLLBACK
+      connection.release();
+      console.log('Query Error', err);
+      return false;
+    }
+  } catch (err) {
+    console.log('DB Error');
+    return false;
+  }
+};
+
+const setRefreshData = async (parameter) => {
+  const signUpSql = `
+  INSERT INTO REFRESH (ID, EXPIRED_TIME)
+  VALUES ("1", now()) ON DUPLICATE KEY UPDATE EXPIRED_TIME = now();
+  `;
+  const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+  try {
+    //await connection.beginTransaction(); // START TRANSACTION
+    let [memberInfo] = await connection.query(signUpSql, [
+      mem_username,
+      mem_userid,
+      mem_email,
+      mem_social,
+      mem_nickname,
+    ]);
+    await connection.commit(); // COMMIT
+    connection.release();
+    console.log('[setMemberSignUp] success Query SELECT');
+    return memberInfo;
+  } catch (err) {
+    await connection.rollback(); // ROLLBACK
+    connection.release();
+    console.log('Query Error', err);
+    return false;
+  }
+};
+
+//DELETE REFRESH DATA
+const deleteRefreshData = async (parameter) => {
+  const mem_nickname = parameter?.mem_nickname;
+  const signUpSql = `
+   DELETE FROM REFRESH
+   WHERE ID = ?
+  `;
+  const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+  try {
+    //await connection.beginTransaction(); // START TRANSACTION
+    let [memberInfo] = await connection.query(signUpSql, []);
+    await connection.commit(); // COMMIT
+    connection.release();
+    console.log('[setMemberSignUp] success Query SELECT');
+    return memberInfo;
+  } catch (err) {
+    await connection.rollback(); // ROLLBACK
+    connection.release();
+    console.log('Query Error', err);
+    return false;
+  }
+};
+
 module.exports = {
   setMemberSignUp: setMemberSignUp,
   getLoginData: getLoginData,
   getEmailIsAlreadyExist: getEmailIsAlreadyExist,
+  getRefreshData,
+  setRefreshData,
+  deleteRefreshData,
 };
