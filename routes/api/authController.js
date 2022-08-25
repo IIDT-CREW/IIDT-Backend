@@ -382,8 +382,13 @@ router.get('/callback/:coperation', async (req, res) => {
           res.json(makedResponse);
         }
       }
+    } else {
+      const makedResponse = returnResponse({ res, jwtToken, refreshToken });
+      res.json(makedResponse);
     }
   } catch (e) {
+    const makedResponse = returnResponse({ res, jwtToken, refreshToken });
+    res.json(makedResponse);
     console.log(e);
   }
 });
