@@ -117,22 +117,23 @@ const getLoginData = async (mem_email) => {
   }
 };
 
-const getRefreshData = async (mem_email) => {
-  let loginSql = `
-      SELECT ID, EXPIRED_TIME
+const getRefreshData = async (parameter) => {
+  const id = parameter.id;
+  const selectSql = `
+      SELECT ID, REFRESH_TOKEN
       FROM REFRESH
-      WHERE ID = "1";
+      WHERE ID = ?
     `;
 
   try {
     const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
     try {
       //await connection.beginTransaction(); // START TRANSACTION
-      let [memberInfo] = await connection.query(loginSql, [mem_email]);
+      let [refreshData] = await connection.query(selectSql, [id]);
       await connection.commit(); // COMMIT
       connection.release();
-      console.log('success Query SELECT');
-      return memberInfo;
+      console.log('[getRefreshData] success Query SELECT');
+      return refreshData;
     } catch (err) {
       await connection.rollback(); // ROLLBACK
       connection.release();
@@ -146,24 +147,24 @@ const getRefreshData = async (mem_email) => {
 };
 
 const setRefreshData = async (parameter) => {
-  const signUpSql = `
-  INSERT INTO REFRESH (ID, EXPIRED_TIME)
-  VALUES ("1", now()) ON DUPLICATE KEY UPDATE EXPIRED_TIME = now();
+  const id = parameter.id;
+  const refreshToken = parameter.refreshToken;
+  const refreshSql = `
+  INSERT INTO REFRESH (ID, REFRESH_TOKEN)
+  VALUES (?, ?) ON DUPLICATE KEY UPDATE REFRESH_TOKEN = ?
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
     //await connection.beginTransaction(); // START TRANSACTION
-    let [memberInfo] = await connection.query(signUpSql, [
-      mem_username,
-      mem_userid,
-      mem_email,
-      mem_social,
-      mem_nickname,
+    let [refreshData] = await connection.query(refreshSql, [
+      id,
+      refreshToken,
+      refreshToken,
     ]);
     await connection.commit(); // COMMIT
     connection.release();
-    console.log('[setMemberSignUp] success Query SELECT');
-    return memberInfo;
+    console.log('[setRefreshData] success Query SELECT');
+    return refreshData;
   } catch (err) {
     await connection.rollback(); // ROLLBACK
     connection.release();
@@ -174,19 +175,19 @@ const setRefreshData = async (parameter) => {
 
 //DELETE REFRESH DATA
 const deleteRefreshData = async (parameter) => {
-  const mem_nickname = parameter?.mem_nickname;
-  const signUpSql = `
+  const id = parameter?.id;
+  const deleteSql = `
    DELETE FROM REFRESH
    WHERE ID = ?
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
     //await connection.beginTransaction(); // START TRANSACTION
-    let [memberInfo] = await connection.query(signUpSql, []);
+    let [refereshRes] = await connection.query(deleteSql, [id]);
     await connection.commit(); // COMMIT
     connection.release();
-    console.log('[setMemberSignUp] success Query SELECT');
-    return memberInfo;
+    console.log('[deleteRefreshData] success Query SELECT');
+    return refereshRes;
   } catch (err) {
     await connection.rollback(); // ROLLBACK
     connection.release();

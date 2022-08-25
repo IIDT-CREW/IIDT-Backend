@@ -1,10 +1,10 @@
 let express = require('express');
 let router = express.Router();
 const jwt = require('../../lib/jwt-util');
-const redisClient = require('../../lib/redis');
+// const redisClient = require('../../lib/redis');
 const {
   refresh,
-  refreshClinetSide,
+  // refreshClinetSide,
   authorizationRequest,
 } = require('../../lib/refresh');
 const _ = require('lodash');
@@ -273,7 +273,10 @@ router.get('/callback/:coperation', async (req, res) => {
             refreshToken = refresh;
           }
           // 발급한 refresh token을 redis에 key를 user의 id로 하여 저장합니다.
-          await redisClient.set(`${id}_${email}`, refreshToken);
+          await authDaoNew.setRefreshData({
+            id: `${id}_${email}`,
+            refreshToken,
+          });
           const makedResponse = returnResponse({ res, jwtToken, refreshToken });
           res.json(makedResponse);
         }
@@ -324,8 +327,10 @@ router.get('/callback/:coperation', async (req, res) => {
           }
 
           // 발급한 refresh token을 redis에 key를 user의 id로 하여 저장합니다.
-          if (refreshToken)
-            await redisClient.set(`${id}_${email}`, refreshToken);
+          await authDaoNew.setRefreshData({
+            id: `${id}_${email}`,
+            refreshToken,
+          });
           const makedResponse = returnResponse({ res, jwtToken, refreshToken });
           res.json(makedResponse);
         }
@@ -365,7 +370,12 @@ router.get('/callback/:coperation', async (req, res) => {
 
           //id 값이 중복되는 것을 방지하기 위해
           //id_social값을 key로 사용한다.
-          await redisClient.set(`${id}_${email}`, refreshToken);
+          //await redisClient.set(`${id}_${email}`, refreshToken);
+          await authDaoNew.setRefreshData({
+            id: `${id}_${email}`,
+            refreshToken,
+          });
+          // await authDaoNew.setRefreshData(email);
 
           const makedResponse = returnResponse({ res, jwtToken, refreshToken });
           // console.log('makedResponse= ', makedResponse);
