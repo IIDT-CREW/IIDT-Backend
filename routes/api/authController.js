@@ -20,12 +20,13 @@ const resMessage = require('../../lib/resMessage');
 const statusCode = require('../../lib/statusCode');
 const { API_CODE } = require('../../lib/statusCode');
 
+const SERVER_URL = process.env.SERVER_URL;
 class Kakao {
   constructor(code) {
     this.url = 'https://kauth.kakao.com/oauth/token';
     this.clientID = process.env.KAKAO_CLIENT_ID;
     this.clientSecret = process.env.KAKAO_CLIENT_SECRET;
-    this.redirectUri = 'http://localhost:3001/oauth/callback/kakao';
+    this.redirectUri = `${SERVER_URL}/oauth/callback/kakao`;
     this.code = code;
     // userInfo
     this.userInfoUrl = 'https://kapi.kakao.com/v2/user/me';
@@ -38,7 +39,7 @@ class Google {
     this.url = 'https://oauth2.googleapis.com/token';
     this.clientID = process.env.GOOGLE_CLIENT_ID;
     this.clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    this.redirectUri = 'http://localhost:3001/oauth/callback/google';
+    this.redirectUri = `${SERVER_URL}/oauth/callback/google`;
     this.grant_type = 'authorization_code';
     this.code = code;
     // userInfo
@@ -52,7 +53,7 @@ class Naver {
     this.url = 'https://nid.naver.com/oauth2.0/token';
     this.clientID = process.env.NAVER_CLIENT_ID;
     this.clientSecret = process.env.NAVER_SECRET;
-    this.redirectUri = 'http://localhost:3001/oauth/callback/naver';
+    this.redirectUri = `${SERVER_URL}/oauth/callback/naver`;
     this.grant_type = 'authorization_code';
     this.code = code;
     this.state = state;
