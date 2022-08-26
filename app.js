@@ -58,6 +58,18 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use((req, res, next) => {
+  if (whitelist.indexOf(req.headers.origin) !== -1) {
+    res.header('Access-Control-Allow-Origin', req.headers.origin);
+    res.header(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept',
+    );
+  }
+  next();
+});
+
 app.use('/', indexRouter);
 app.use('/api/oauth', authRouter);
 app.use('/api/will', willRouter);
