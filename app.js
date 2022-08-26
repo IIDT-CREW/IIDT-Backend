@@ -40,7 +40,7 @@ app.use(
         callback(new Error('not Allowed Origin!'));
       }
     },
-    credentials: true,
+    // credentials: true,
   }),
 );
 // app.use(express.json());
