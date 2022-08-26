@@ -19,11 +19,21 @@ let app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(logger('dev'));
+
+const whitelist = [
+  'http://localhost:3001',
+  'https://localhost:3001',
+  'https://www.if-i-die-tomorrow.com',
+  'https://if-i-die-tomorrow.com',
+];
 app.use(
   cors({
     origin: function (origin, callback) {
-      const isTrue = domains.indexOf(origin) !== -1;
-      callback(null, isTrue);
+      if (whitelist.indexOf(origin) !== -1) {
+        callback(null, isTrue);
+      } else {
+        callback(new Error('not Allowed Origin!'));
+      }
     },
     credentials: true,
   }),
