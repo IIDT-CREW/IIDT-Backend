@@ -6,18 +6,18 @@ const winston = require('winston');
 const willDao = require('../../model/mysql/willDao');
 const { API_CODE } = require('../../lib/statusCode');
 const resMessage = require('../../lib/resMessage');
-
+const authJwt = require('../../middlewares/auth');
 //
 router.get('/getWillCount', async (req, res) => {
   try {
     const willInfo = await willDao.getWillCount();
-    console.log('willInfo = ', willInfo);
+
     const responseData = helpers.returnResponse(
       API_CODE.SUCCESS,
       resMessage.SUCCESS,
       willInfo[0].COUNT,
     );
-    console.log('responseData', responseData);
+
     res.json(responseData);
   } catch (e) {
     console.log(e);
@@ -40,13 +40,13 @@ router.get('/getMyWill', async (req, res) => {
   console.log(parameter);
   try {
     const willInfo = await willDao.getMyWill(parameter);
-    console.log('willInfo = ', willInfo);
+
     const responseData = helpers.returnResponse(
       API_CODE.SUCCESS,
       resMessage.SUCCESS,
       willInfo,
     );
-    console.log('responseData', responseData);
+
     res.json(responseData);
   } catch (e) {
     console.log(e);
@@ -67,13 +67,13 @@ router.get('/getWill', async (req, res) => {
   console.log(parameter);
   try {
     const willInfo = await willDao.getWill(parameter);
-    console.log('willInfo = ', willInfo);
+
     const responseData = helpers.returnResponse(
       API_CODE.SUCCESS,
       resMessage.SUCCESS,
       willInfo,
     );
-    console.log('responseData', responseData);
+
     res.json(responseData);
   } catch (e) {
     console.log(e);
@@ -88,7 +88,7 @@ router.get('/getWill', async (req, res) => {
 
 //추가
 //...todo auth 추가
-router.post('/insertWill', async (req, res) => {
+router.post('/insertWill', authJwt, async (req, res) => {
   const parameter = {
     title: req.body.title,
     content: req.body.content,
@@ -118,7 +118,7 @@ router.post('/insertWill', async (req, res) => {
 
 // 삭제
 //...todo auth 추가
-router.post('/deleteWill', async (req, res) => {
+router.post('/deleteWill', authJwt, async (req, res) => {
   const parameter = {
     will_id: req.body.will_id,
   };
