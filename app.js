@@ -23,12 +23,17 @@ app.use(logger('dev'));
 const whitelist = [
   'http://localhost:3001',
   'https://localhost:3001',
+  'http://localhost:6060',
+  'https://localhost:6060',
   'https://www.if-i-die-tomorrow.com',
   'https://if-i-die-tomorrow.com',
 ];
 app.use(
   cors({
     origin: function (origin, callback) {
+      console.log('origin ', origin);
+      console.log('whitelist.indexOf(origin) ', whitelist.indexOf(origin));
+
       if (!origin || whitelist.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
