@@ -19,7 +19,15 @@ let app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(logger('dev'));
-app.use(cors({ origin: true, credentials: true }));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      const isTrue = domains.indexOf(origin) !== -1;
+      callback(null, isTrue);
+    },
+    credentials: true,
+  }),
+);
 // app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
 
