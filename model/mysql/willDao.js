@@ -55,6 +55,7 @@ const getMyWill = async (parameter) => {
         FROM IIDT_MEMBER
         WHERE MEM_USERID = ?
     )
+    ORDER BY REG_DATE DESC
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {

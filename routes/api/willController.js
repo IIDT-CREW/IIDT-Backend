@@ -37,7 +37,7 @@ router.get('/getMyWill', async (req, res) => {
     mem_userid: req.query.mem_userid,
     mem_email: req.query.mem_email,
   };
-  console.log(parameter);
+
   try {
     const willInfo = await willDao.getMyWill(parameter);
 
@@ -46,7 +46,7 @@ router.get('/getMyWill', async (req, res) => {
       resMessage.SUCCESS,
       willInfo,
     );
-
+    console.log('[getMyWill] responseData', responseData);
     res.json(responseData);
   } catch (e) {
     console.log(e);
