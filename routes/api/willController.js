@@ -6,7 +6,7 @@ const winston = require('winston');
 const willDao = require('../../model/mysql/willDao');
 const { API_CODE } = require('../../lib/statusCode');
 const resMessage = require('../../lib/resMessage');
-const authJwt = require('../../middlewares/auth');
+const authJwt = require('../../middlewares/authRefresh');
 //
 router.get('/getWillCount', async (req, res) => {
   try {
