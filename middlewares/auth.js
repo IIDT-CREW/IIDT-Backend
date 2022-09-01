@@ -1,47 +1,43 @@
-const { verify } = require('../lib/jwt-util');
-const helpers = require('../lib/helpers');
+const { accessTokenVerify } = require('../lib/refresh');
+const { API_CODE } = require('../lib/statusCode');
+const resMessage = require('../lib/resMessage');
 
-const authMiddleware = (req, res, next) => {
-  // read the token from header or url
-  const token = req.headers['authorization'] || req.query.token;
-
-  // token does not exist
-  if (!token) {
-    // const response = helpers.returnResponse('');
-    return res.status(403).json({
-      code: '4002',
-      message: 'not logged in',
-      result: null,
+const authMiddleware = async (req, res, next) => {
+  //1. 액세스 토큰 검증
+  const accessTokenVerifyInfo = accessTokenVerify(req);
+  console.log('accessTokenVerifyInfo =', accessTokenVerifyInfo);
+  if (
+    !accessTokenVerifyInfo.ok &&
+    accessTokenVerifyInfo.reason === 'No authorized'
+  ) {
+    return res.json({
+      code: API_CODE.FAILURE_USER_AUTH,
+      message: resMessage.FAILURE_USER_AUTH,
+      result: resMessage.FAILURE_USER_AUTH,
+    });
+  }
+  //2. 엑세스 토큰이 익스파이어 됬거나 없는 경우
+  if (
+    !accessTokenVerifyInfo.ok &&
+    (accessTokenVerifyInfo.reason === 'Access token is expired' ||
+      accessTokenVerifyInfo.reason === 'Not have Access token')
+  ) {
+    console.log('2. 엑세스 토큰이 익스파이어 됬거나 없는 경우');
+    return res.json({
+      code: API_CODE.CREDENTIAL_EXPIRED,
+      message: resMessage.CREDENTIAL_EXPIRED,
+      result: resMessage.FAILURE_USER_AUTH,
     });
   }
 
-  const authToken = token.split('Bearer ')[1];
-  console.log('authToken = ', authToken);
-  // create a promise that decodes the token
-  const p = new Promise((resolve, reject) => {
-    const decoded = verify(authToken);
-    console.log('decoded = ', decoded);
-    if (decoded.ok) {
-      resolve(decoded);
-    } else {
-      reject(decoded);
-    }
-  });
-
-  // if it has failed to verify, it will return an error message
-  const onError = (error) => {
-    res.status(403).json({
-      code: '4000',
-      message: error.message,
-      result: null,
-    });
-  };
-
-  // process the promise
-  p.then((decoded) => {
-    req.decoded = decoded;
+  if (
+    accessTokenVerifyInfo.ok &&
+    accessTokenVerifyInfo.reason === 'Access token is not expired'
+  ) {
+    console.log('accessTokenVerify is verify');
+    req.decoded = accessTokenVerifyInfo.decoded;
     next();
-  }).catch(onError);
+  }
 };
 
 module.exports = authMiddleware;
