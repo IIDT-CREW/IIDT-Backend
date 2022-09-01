@@ -117,6 +117,35 @@ const getLoginData = async (mem_email) => {
   }
 };
 
+const getRefreshDataToRefresh = async (parameter) => {
+  const refreshToken = parameter.refreshToken;
+  const selectSql = `
+      SELECT ID
+      FROM REFRESH
+      WHERE REFRESH_TOKEN = ?
+    `;
+
+  try {
+    const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+    try {
+      //await connection.beginTransaction(); // START TRANSACTION
+      let [refreshData] = await connection.query(selectSql, [refreshToken]);
+      await connection.commit(); // COMMIT
+      connection.release();
+      console.log('[getRefreshData] success Query SELECT');
+      return refreshData;
+    } catch (err) {
+      await connection.rollback(); // ROLLBACK
+      connection.release();
+      console.log('Query Error', err);
+      return false;
+    }
+  } catch (err) {
+    console.log('DB Error');
+    return false;
+  }
+};
+
 const getRefreshData = async (parameter) => {
   const id = parameter.id;
   const selectSql = `
@@ -150,8 +179,8 @@ const setRefreshData = async (parameter) => {
   const id = parameter.id;
   const refreshToken = parameter.refreshToken;
   const refreshSql = `
-  INSERT INTO REFRESH (ID, REFRESH_TOKEN)
-  VALUES (?, ?) ON DUPLICATE KEY UPDATE REFRESH_TOKEN = ?
+    INSERT INTO REFRESH (ID, REFRESH_TOKEN)
+    VALUES (?, ?) ON DUPLICATE KEY UPDATE REFRESH_TOKEN = ?
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
@@ -202,5 +231,6 @@ module.exports = {
   getEmailIsAlreadyExist: getEmailIsAlreadyExist,
   getRefreshData,
   setRefreshData,
+  getRefreshDataToRefresh,
   deleteRefreshData,
 };
