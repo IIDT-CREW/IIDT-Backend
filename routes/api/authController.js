@@ -1,7 +1,7 @@
 let express = require('express');
 let router = express.Router();
 const jwt = require('../../lib/jwt-util');
-const { refresh, authorizationRequest } = require('../../lib/refresh');
+const { refresh } = require('../../lib/refresh');
 const _ = require('lodash');
 const helper = require('../../lib/helpers');
 const winston = require('winston');
@@ -9,7 +9,6 @@ const logger = winston.createLogger();
 const qs = require('qs');
 const fetch = require('node-fetch');
 const authDaoNew = require('../../model/mysql/authDaoNew');
-const authJwt = require('../../middlewares/auth');
 const authRefreshMiddleWare = require('../../middlewares/auth');
 const resMessage = require('../../lib/resMessage');
 const statusCode = require('../../lib/statusCode');
@@ -111,7 +110,6 @@ const getUserInfo = async (method, url, access_token) => {
 };
 
 //...todo 아래 사인업 추가
-async function tokenGenerator() {}
 async function signUp({ id, email, nickname, social, isExist }) {
   let jwtToken = null;
   let refreshToken = null;
@@ -148,37 +146,14 @@ async function signUp({ id, email, nickname, social, isExist }) {
   return { jwtToken, refreshToken };
 }
 
-// function returnResponse({ res, jwtToken, refreshToken }) {
-//   res.cookie('access_token', jwtToken, {
-//     maxAge: 60 * 1000,
-//     expires: false,
-//     httpOnly: true,
-//   });
-
-//   res.cookie('refresh_token', refreshToken, {
-//     maxAge: 1000 * 60 * 60 * 24 * 1,
-//     httpOnly: true,
-//   });
-
-//   let responseData = {
-//     code: statusCode.OK,
-//     reason: resMessage.SIGN_IN_SUCCESS,
-//     accessToken: jwtToken,
-//   };
-//   console.log('responseData = ', responseData);
-//   return responseData;
-// }
-
 function returnResponse({ res, jwtToken, refreshToken }) {
-  // res.cookie('access_token', jwtToken, {
-  //   maxAge: 60 * 1000,
-  //   expires: false,
-  //   httpOnly: true,
-  // });
-
+  res.cookie('access_token', jwtToken, {
+    maxAge: 1000 * 60 * 60 * 4,
+    httpOnly: true,
+  });
   /* 리프레시 토큰 설정  */
   res.cookie('refresh_token', refreshToken, {
-    maxAge: 1000 * 60 * 60 * 24 * 1,
+    maxAge: 1000 * 60 * 60 * 24 * 2,
     httpOnly: true,
   });
 
@@ -402,21 +377,8 @@ checkValidationPassword = (password, res) => {
   return true;
 };
 
-router.get('/test-refresh', async (req, res) => {
-  // console.log('hello~');
-  res.status(401).json('crash');
-});
-
 /* refresh token 발행을 위한 라우터  */
 router.get('/refresh', refresh);
-
-router.get('/test', async (req, res) => {
-  res.cookie('access-tokens', 'abc', {
-    maxAge: 1000 * 60 * 60 * 24 * 1,
-    httpOnly: true,
-  });
-  res.send('hello updated.');
-});
 
 router.get('/logout', async (req, res) => {
   res.cookie('access_token', '', {
@@ -425,7 +387,11 @@ router.get('/logout', async (req, res) => {
   res.cookie('refresh_token', '', {
     maxAge: 0,
   });
-  res.send('hello updated.');
+  res.send({
+    code: API_CODE.SUCCESS,
+    reason: resMessage.SUCCESS,
+    result: '',
+  });
 });
 
 router.get('/login', async (req, res) => {
@@ -495,51 +461,27 @@ router.get('/login', async (req, res) => {
     result: accessToken,
   });
 });
-router.get('/userInfoTest', authRefreshMiddleWare, async (req, res) => {
-  console.log('userInfoTest = req.accessToken ', req.accessToken);
-  console.log('userInfoTest = req.decoded ', req.decoded);
-  let responseData = {
-    code: API_CODE.SUCCESS,
-    reason: resMessage.SUCCESS,
-    data: 'hello',
-  };
-  res.json(responseData);
-  return;
+router.get('/userInfo', authRefreshMiddleWare, async (req, res) => {
+  //...todo 이메일이 없을 경우도
+  if (req.decoded.email === '') {
+    console.log('[userInfo] 이메일이 없습니다.');
+  }
+  const memberRow = await authDaoNew.getLoginData(req.decoded.email);
+  console.log('[userInfo] getLoginData = ', memberRow);
+  if (memberRow[0]) {
+    let responseData = {
+      code: API_CODE.SUCCESS,
+      reason: resMessage.SUCCESS,
+      result: memberRow[0],
+    };
+    res.json(responseData);
+    return;
+  }
 });
-
-// router.get('/userInfo', async (req, res) => {
-//   const authorization = await authorizationRequest(req);
-//   console.log('[userInfo] authorization = ', authorization);
-//   if (authorization.ok) {
-//     //...todo 이메일이 없을 경우도
-//     if (authorization.decoded.email === '') {
-//       console.log('[userInfo] 이메일이 없습니다.');
-//     }
-//     const memberRow = await authDaoNew.getLoginData(
-//       authorization.decoded.email,
-//     );
-//     console.log('[userInfo] getLoginData = ', memberRow);
-//     if (memberRow[0]) {
-//       let responseData = {
-//         code: API_CODE.SUCCESS,
-//         reason: resMessage.SUCCESS,
-//         data: memberRow[0],
-//       };
-//       res.json(responseData);
-//       return;
-//     }
-//   } else {
-//     res.json({
-//       code: API_CODE.INVALID_TOKEN,
-//       reason: resMessage.INVALID_TOKEN,
-//       result: '',
-//     });
-//   }
-// });
 /* 
   profile
   middleware 적용 
 */
-router.get('/profile', authJwt, async (req, res) => {});
+router.get('/profile', authRefreshMiddleWare, async (req, res) => {});
 
 module.exports = router;

@@ -6,7 +6,7 @@ const winston = require('winston');
 const willDao = require('../../model/mysql/willDao');
 const { API_CODE } = require('../../lib/statusCode');
 const resMessage = require('../../lib/resMessage');
-const authJwt = require('../../middlewares/authRefresh');
+const authMiddleware = require('../../middlewares/auth');
 //
 router.get('/getWillCount', async (req, res) => {
   try {
@@ -32,7 +32,7 @@ router.get('/getWillCount', async (req, res) => {
 
 //내가 작성한 유서 가져오기
 //...todo auth 추가
-router.get('/getMyWill', async (req, res) => {
+router.get('/getMyWill', authMiddleware, async (req, res) => {
   const parameter = {
     mem_userid: req.query.mem_userid,
     mem_email: req.query.mem_email,
@@ -46,7 +46,7 @@ router.get('/getMyWill', async (req, res) => {
       resMessage.SUCCESS,
       willInfo,
     );
-    console.log('[getMyWill] responseData', responseData);
+
     res.json(responseData);
   } catch (e) {
     console.log(e);
@@ -64,7 +64,7 @@ router.get('/getWill', async (req, res) => {
   const parameter = {
     will_id: req.query.will_id,
   };
-  console.log(parameter);
+
   try {
     const willInfo = await willDao.getWill(parameter);
 
@@ -88,7 +88,7 @@ router.get('/getWill', async (req, res) => {
 
 //추가
 //...todo auth 추가
-router.post('/insertWill', authJwt, async (req, res) => {
+router.post('/insertWill', authMiddleware, async (req, res) => {
   const parameter = {
     title: req.body.title,
     content: req.body.content,
@@ -96,7 +96,6 @@ router.post('/insertWill', authJwt, async (req, res) => {
     mem_idx: req.body.mem_idx,
     will_id: req.body.will_id,
   };
-  console.log(parameter);
   try {
     const willInfo = await willDao.insertWill(parameter);
     const responseData = helpers.returnResponse(
@@ -118,7 +117,7 @@ router.post('/insertWill', authJwt, async (req, res) => {
 
 // 삭제
 //...todo auth 추가
-router.post('/deleteWill', authJwt, async (req, res) => {
+router.post('/deleteWill', authMiddleware, async (req, res) => {
   const parameter = {
     will_id: req.body.will_id,
   };
