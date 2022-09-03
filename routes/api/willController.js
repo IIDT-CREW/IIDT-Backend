@@ -87,11 +87,11 @@ router.get('/getWill', async (req, res) => {
 });
 
 //추가
-//...todo auth 추가
 router.post('/insertWill', authMiddleware, async (req, res) => {
   const parameter = {
     title: req.body.title,
     content: req.body.content,
+    content_type: req.body.content_type,
     thumbnail: req.body.thumbnail,
     mem_idx: req.body.mem_idx,
     will_id: req.body.will_id,
@@ -114,9 +114,36 @@ router.post('/insertWill', authMiddleware, async (req, res) => {
     res.json(responseData);
   }
 });
+//수정
+router.post('/updatetWill', authMiddleware, async (req, res) => {
+  const parameter = {
+    title: req.body.title,
+    content: req.body.content,
+    content_type: req.body.content_type,
+    thumbnail: req.body.thumbnail,
+    mem_idx: req.body.mem_idx,
+    will_id: req.body.will_id,
+  };
+  try {
+    const willInfo = await willDao.updateWill(parameter);
+    const responseData = helpers.returnResponse(
+      API_CODE.SUCCESS,
+      resMessage.SUCCESS,
+      willInfo,
+    );
+
+    res.json(responseData);
+  } catch (e) {
+    const responseData = helpers.returnResponse(
+      API_CODE.INTERNAL_ERROR,
+      resMessage.INTERNAL_ERROR,
+      null,
+    );
+    res.json(responseData);
+  }
+});
 
 // 삭제
-//...todo auth 추가
 router.post('/deleteWill', authMiddleware, async (req, res) => {
   const parameter = {
     will_id: req.body.will_id,
