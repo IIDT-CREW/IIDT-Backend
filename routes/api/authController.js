@@ -201,7 +201,7 @@ router.get('/callback/:coperation', async (req, res) => {
 
     // console.log('options= ', options);
     const tokenInfo = await getAccessToken(options);
-    // console.log('token = ', tokenInfo);
+    console.log('token = ', tokenInfo);
 
     if (!tokenInfo) return;
     if (coperation === 'google')
@@ -361,8 +361,14 @@ router.get('/callback/:coperation', async (req, res) => {
       res.json(makedResponse);
     }
   } catch (e) {
-    const makedResponse = returnResponse({ res, jwtToken, refreshToken });
-    res.json(makedResponse);
+    //const makedResponse = returnResponse({ res, jwtToken, refreshToken });
+    res.json({
+      code: API_CODE.INTERNAL_ERROR,
+      reason: resMessage.INTERNAL_ERROR,
+      result: '',
+      accessToken: '',
+      // refreshToken,
+    });
     console.log(e);
   }
 });
