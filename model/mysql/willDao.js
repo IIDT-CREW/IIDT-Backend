@@ -140,7 +140,7 @@ const updateWill = async (parameter) => {
 
   const updateWillSql = `
     UPDATE WILL 
-    SET TITLE = ?, CONTENT = ?, THUMBNAIL =? , REG_DATE =now(),  IS_PRIVATE =?,  MEM_IDX =?,  WILL_ID=?, CONTENT_TYPE=? 
+    SET TITLE = ?, CONTENT = ?, THUMBNAIL =? , REG_DATE =now(),  IS_PRIVATE =false,  MEM_IDX =?,  WILL_ID=?, CONTENT_TYPE=? 
     WHERE WILL_ID = ? 
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
