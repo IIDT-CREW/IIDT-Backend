@@ -115,7 +115,7 @@ router.post('/insertWill', authMiddleware, async (req, res) => {
   }
 });
 //수정
-router.post('/updatetWill', authMiddleware, async (req, res) => {
+router.post('/updateWill', authMiddleware, async (req, res) => {
   const parameter = {
     title: req.body.title,
     content: req.body.content,
