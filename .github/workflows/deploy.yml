@@ -5,9 +5,9 @@ name: deploy
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
   pull_request:
-    branches: [develop]
+    branches: [main]
 
 jobs:
   build:
@@ -35,6 +35,22 @@ jobs:
         run: |
           pwd
           touch .env
+          echo SERVER_URL=${{ secrets.SERVER_URL }} >> .env
+          echo KAKAO_CLIENT_ID=${{ secrets.KAKAO_CLIENT_ID }} >> .env
+          echo KAKAO_CLIENT_SECRET=${{ secrets.KAKAO_CLIENT_SECRET }} >> .env
+
+          echo GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} >> .env
+          echo GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} >> .env
+
+          echo NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }} >> .env
+          echo NAVER_SECRET=${{ secrets.NAVER_SECRET }} >> .env
+
+          echo JWT_SECRET=${{ secrets.JWT_SECRET }} >> .env
+          echo MYSQL_USER=${{ secrets.MYSQL_USER }} >> .env
+          echo MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }} >> .env
+          echo MYSQL_HOST=${{ secrets.MYSQL_HOST }} >> .env
+          echo MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }} >> .env
+
           cat .env
 
       - name: build server files
@@ -42,4 +58,25 @@ jobs:
         run: |
           yarn
           yarn run build
-          
+
+      ###################################### 추가된 부분 ######################################
+
+      - name: zip file
+        run: zip -r iidt.zip ./build ./scripts ./appspec.yml ./.env ./package.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: upload to S3
+        run: aws s3 cp --region ${{ secrets.AWS_REGION }} ./iidt.zip s3://${{ secrets.AWS_S3_BUCKET_NAME }}/deploy/
+
+      - name: deploy with AWS codeDeploy
+        run: aws deploy create-deployment
+          --application-name ${{ secrets.CODE_DEPLOY_APPLICATION_NAME }}
+          --deployment-config-name CodeDeployDefault.OneAtATime
+          --deployment-group-name ${{ secrets.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }}
+          --s3-location bucket=${{ secrets.AWS_S3_BUCKET_NAME }},bundleType=zip,key=deploy/iidt.zip
