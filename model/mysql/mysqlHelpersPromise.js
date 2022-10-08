@@ -16,7 +16,6 @@ const pool = mysql.createPool({
   keepAliveInitialDelay: 10000, // 0 by default.
   enableKeepAlive: true, // false by default.
 });
-
 module.exports = {
   // properties
   mysql: mysql,
