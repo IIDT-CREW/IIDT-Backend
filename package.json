@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "pm2 start ./bin/www"
+    "test": "node build/app.js",
+    "start": "pm2 start ./src/bin/www",
+    "build:server": "babel src -d build"
   },
   "dependencies": {
     "axios": "0.21.1",
@@ -35,5 +37,9 @@
     "request": "^2.88.2",
     "request-promise-native": "^1.0.9",
     "winston": "3.8.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.19.3",
+    "@babel/core": "7.19.3"
   }
 }

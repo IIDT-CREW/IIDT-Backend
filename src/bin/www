@@ -7,7 +7,6 @@ var app = require('../app');
 var debug = require('debug')('back:server');
 const fs = require('fs');
 var http = require('http');
-let https = require('https');
 const path = require('path');
 
 process.env.NODE_ENV =
