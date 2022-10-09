@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node build/app.js",
-    "pm2:start": "pm2 start ./src/bin/www",
+    "start": "pm2 build/app.js",
+    "pm2:start": "pm2 start src/app.js",
     "build:server": "babel src -d build"
   },
   "dependencies": {
