@@ -9,7 +9,7 @@ rm -rf ${PROJECT_PATH}/build
 mkdir ${PROJECT_PATH}/build
 
  # data 복사 
-cp -r  /home/ubuntu/build/build  ${PROJECT_PATH}/build
+cp -r  /home/ubuntu/build/build  ${PROJECT_PATH}/
     
 
 cd ${PROJECT_PATH}

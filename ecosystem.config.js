@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'iidt-pm2', // pm2 name
-      script: './bin/www', // // 앱 실행 스크립트
+      script: './build/app.js', // // 앱 실행 스크립트
       instances: 1, // 클러스터 모드 사용 시 생성할 인스턴스 수
       exec_mode: 'cluster', // fork, cluster 모드 중 선택
       merge_logs: true, // 클러스터 모드 사용 시 각 클러스터에서 생성되는 로그를 한 파일로 합쳐준다.
