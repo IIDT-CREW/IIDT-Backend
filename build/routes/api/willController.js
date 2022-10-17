@@ -30,7 +30,6 @@ router.get('/getWillCount', async (req, res) => {
     res.json(responseData);
   }
 }); //내가 작성한 유서 가져오기
-//...todo auth 추가
 
 router.get('/getMyWill', authMiddleware, async (req, res) => {
   const parameter = {
@@ -40,7 +39,8 @@ router.get('/getMyWill', authMiddleware, async (req, res) => {
 
   try {
     const willInfo = await willDao.getMyWill(parameter);
-    const responseData = helpers.returnResponse(API_CODE.SUCCESS, resMessage.SUCCESS, willInfo);
+    const rows = helpers.makePaginate(req, willInfo);
+    const responseData = helpers.returnResponse(API_CODE.SUCCESS, resMessage.SUCCESS, rows);
     res.json(responseData);
   } catch (e) {
     console.log(e);

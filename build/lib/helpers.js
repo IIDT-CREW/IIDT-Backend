@@ -76,10 +76,46 @@ const cookieStringToObject = cookieString => {
   return cookies;
 };
 
+getPaginatedItems = (items, pageNo, pageSize) => {
+  //pageNo = 1 , pageSize = 5
+  // => 5( 1 - 1 ) * 5 , 1 * 5
+  // =>  0 , 5
+  //pageNo = 2 , pageSize = 5
+  // => ( 2 -1 ) * 5  , 2 * 5
+  // => 5 , 10
+  return items.slice((pageNo - 1) * pageSize, pageNo * pageSize);
+};
+
+const PAGE_SIZE = 5; //page는 1부터 시작한다;
+
+const makePaginate = (req, result) => {
+  let pageNo = parseInt(req.query.pageNo, 10);
+  let pageSize = req.query.pageSize ? parseInt(req.query.pageSize, 10) : PAGE_SIZE;
+  let totalCount = result.length;
+  let totalPageCount = Math.ceil(result.length / pageSize) + 1;
+  let nextPageNo = pageNo + 1 < totalPageCount ? pageNo + 1 : totalPageCount;
+  let isLast = nextPageNo === totalPageCount;
+  let meta = {
+    pageNo: pageNo,
+    pageSize: pageSize,
+    totalCount: totalCount,
+    totalPageCount: totalPageCount,
+    nextPageNo: nextPageNo,
+    isLast: isLast
+  };
+  const paginatedPosts = getPaginatedItems(result, pageNo ? pageNo : 1, pageSize);
+  const json = {
+    meta: meta,
+    postsList: paginatedPosts
+  };
+  return json;
+};
+
 module.exports = {
   returnResponse: returnResponse,
   getBcryptSalt: getBcryptSalt,
   getHashedPassword: getHashedPassword,
   bcryptCompare: bcryptCompare,
-  cookieStringToObject
+  cookieStringToObject,
+  makePaginate
 };
