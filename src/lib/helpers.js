@@ -108,7 +108,7 @@ const makePaginate = (req, result) => {
 
   const json = {
     meta: meta,
-    postsList: paginatedPosts,
+    willList: paginatedPosts,
   };
 
   return json;
