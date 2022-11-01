@@ -21,6 +21,29 @@ const getWillCount = async () => {
   }
 };
 
+const getWillList = async (parameter) => {
+  const will_id = parameter.will_id;
+  const getWillSql = `
+    select *
+    from WILL
+    WHERE IS_PRIVATE=false
+  `;
+  const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+  try {
+    //await connection.beginTransaction(); // START TRANSACTION
+    let [willInfo] = await connection.query(getWillSql, [will_id]);
+    await connection.commit(); // COMMIT
+    connection.release();
+    console.log('success Query SELECT');
+    return willInfo[0];
+  } catch (err) {
+    await connection.rollback(); // ROLLBACK
+    connection.release();
+    console.log('Query Error', err);
+    return false;
+  }
+};
+
 const getWill = async (parameter) => {
   const will_id = parameter.will_id;
   const getWillSql = `
@@ -80,10 +103,11 @@ const insertWill = async (parameter) => {
   const mem_idx = parameter.mem_idx;
   const will_id = parameter.will_id;
   const content_type = parameter.content_type;
+  const is_private = parameter.is_private;
 
   const insertWillSql = `
     INSERT INTO WILL (TITLE, CONTENT, THUMBNAIL, REG_DATE, IS_PRIVATE, MEM_IDX, WILL_ID, CONTENT_TYPE ) 
-    VALUES (?, ?, ?, now(), false, ?, ?, ? );
+    VALUES (?, ?, ?, now(), ?, ?, ?, ? );
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
@@ -92,6 +116,7 @@ const insertWill = async (parameter) => {
       title,
       content,
       thumbnail,
+      is_private,
       mem_idx,
       will_id,
       content_type,
@@ -137,10 +162,10 @@ const updateWill = async (parameter) => {
   const mem_idx = parameter.mem_idx;
   const will_id = parameter.will_id;
   const content_type = parameter.content_type;
-
+  const is_private = parameter.is_private;
   const updateWillSql = `
     UPDATE WILL 
-    SET TITLE = ?, CONTENT = ?, THUMBNAIL =? , REG_DATE =now(),  IS_PRIVATE =false,  MEM_IDX =?,  WILL_ID=?, CONTENT_TYPE=? 
+    SET TITLE = ?, CONTENT = ?, THUMBNAIL =? , REG_DATE =now(),  IS_PRIVATE =?,  MEM_IDX =?,  WILL_ID=?, CONTENT_TYPE=? 
     WHERE WILL_ID = ? 
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
@@ -150,6 +175,7 @@ const updateWill = async (parameter) => {
       title,
       content,
       thumbnail,
+      is_private,
       mem_idx,
       will_id,
       content_type,
@@ -170,6 +196,7 @@ const updateWill = async (parameter) => {
 //todo edit
 module.exports = {
   getWill: getWill,
+  getWillList: getWillList,
   getMyWill: getMyWill,
   deleteWill: deleteWill,
   insertWill: insertWill,
