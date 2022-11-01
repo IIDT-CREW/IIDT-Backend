@@ -84,6 +84,28 @@ router.get('/getWill', async (req, res) => {
   }
 });
 
+router.get('/getWillList', async (req, res) => {
+  try {
+    const willInfo = await willDao.getWillList(parameter);
+    const rows = helpers.makePaginate(req, willInfo);
+    const responseData = helpers.returnResponse(
+      API_CODE.SUCCESS,
+      resMessage.SUCCESS,
+      rows,
+    );
+
+    res.json(responseData);
+  } catch (e) {
+    console.log(e);
+    const responseData = helpers.returnResponse(
+      API_CODE.INTERNAL_ERROR,
+      resMessage.INTERNAL_ERROR,
+      null,
+    );
+    res.json(responseData);
+  }
+});
+
 //추가
 router.post('/insertWill', authMiddleware, async (req, res) => {
   const parameter = {
