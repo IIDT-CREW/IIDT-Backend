@@ -225,6 +225,31 @@ const deleteRefreshData = async (parameter) => {
   }
 };
 
+const checkDuplicateNickname = async (parameter) => {
+  const memNickname = parameter?.mem_nickname;
+  const checkDuplicateNicknameSql = `
+    SELECT COUNT(MEM_NICKNAME) AS IS_EXIST
+    FROM IIDT_MEMBER
+    WHERE MEM_NICKNAME = ?
+  `;
+  const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
+  try {
+    //await connection.beginTransaction(); // START TRANSACTION
+    let [checkNickNameRes] = await connection.query(checkDuplicateNicknameSql, [
+      memNickname,
+    ]);
+    await connection.commit(); // COMMIT
+    connection.release();
+    console.log('[checkNickNameRes] success Query SELECT');
+    return checkNickNameRes;
+  } catch (err) {
+    await connection.rollback(); // ROLLBACK
+    connection.release();
+    console.log('Query Error', err);
+    return false;
+  }
+};
+
 module.exports = {
   setMemberSignUp: setMemberSignUp,
   getLoginData: getLoginData,
@@ -233,4 +258,5 @@ module.exports = {
   setRefreshData,
   getRefreshDataToRefresh,
   deleteRefreshData,
+  checkDuplicateNickname,
 };
