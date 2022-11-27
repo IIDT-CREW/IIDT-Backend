@@ -86,7 +86,7 @@ router.get('/getWill', async (req, res) => {
 
 router.get('/getWillList', async (req, res) => {
   try {
-    const willInfo = await willDao.getWillList(parameter);
+    const willInfo = await willDao.getWillList();
     const rows = helpers.makePaginate(req, willInfo);
     const responseData = helpers.returnResponse(
       API_CODE.SUCCESS,

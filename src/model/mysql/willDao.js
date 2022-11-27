@@ -22,20 +22,20 @@ const getWillCount = async () => {
 };
 
 const getWillList = async (parameter) => {
-  const will_id = parameter.will_id;
   const getWillSql = `
-    select *
-    from WILL
-    WHERE IS_PRIVATE=false
+	  SELECT TITLE, CONTENT, THUMBNAIL, EDIT_DATE, REG_DATE, WILL_ID, MEM_NICKNAME
+    FROM WILL, IIDT_MEMBER
+    WHERE WILL.MEM_IDX = IIDT_MEMBER.MEM_IDX AND IS_PRIVATE=false
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
     //await connection.beginTransaction(); // START TRANSACTION
-    let [willInfo] = await connection.query(getWillSql, [will_id]);
+    let [willInfo] = await connection.query(getWillSql);
+
     await connection.commit(); // COMMIT
     connection.release();
     console.log('success Query SELECT');
-    return willInfo[0];
+    return willInfo;
   } catch (err) {
     await connection.rollback(); // ROLLBACK
     connection.release();
