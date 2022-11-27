@@ -93,6 +93,7 @@ const getAccessToken = async (options) => {
 // authorization: `token ${accessToken}`,
 // accept: 'application/json'
 const getUserInfo = async (method, url, access_token) => {
+  console.log(method, url, access_token);
   try {
     return await fetch(url, {
       method: method,
@@ -101,10 +102,11 @@ const getUserInfo = async (method, url, access_token) => {
         Authorization: `Bearer ${access_token}`,
       },
     }).then((res) => {
-      console.log(res);
+      console.log('[getUserInfo] = ', res);
       return res.json();
     });
   } catch (e) {
+    console.log('[getUserInfo] error= ', e);
     logger.info('error', e);
   }
 };
@@ -169,10 +171,133 @@ function returnResponse({ res, jwtToken, refreshToken }) {
   return responseData;
 }
 
+router.get('/signup/:cooperation', async (req, res) => {
+  try {
+    let cooperation = req.params.cooperation;
+    let access_token = req.query.access_token;
+    let authorization_code = req.query.code;
+    let nickname = req.query.nickname;
+    console.log('[signup] accessToken', access_token);
+    let options;
+    switch (cooperation) {
+      case 'google':
+        options = new Google(authorization_code);
+        break;
+
+      case 'kakao':
+        options = new Kakao(authorization_code);
+        break;
+
+      default:
+        break;
+    }
+
+    if (cooperation === 'google')
+      options.userInfoUrl = `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${access_token}`;
+
+    const userInfo = await getUserInfo(
+      options.userInfoMethod,
+      options.userInfoUrl,
+      access_token,
+    );
+
+    console.log('[signup] userInfo =', userInfo);
+    if (!userInfo) {
+      res.json({
+        code: API_CODE.INTERNAL_ERROR,
+        reason: resMessage.INTERNAL_ERROR,
+        result: '',
+        accessToken: '',
+      });
+      return;
+    }
+
+    if (cooperation === 'kakao') {
+      console.log('[kakao] 로그인을 진행합니다.');
+      const { kakao_account, id } = userInfo;
+      if (id && kakao_account) {
+        console.log('[kakao] id, kakao_account 존재합니다.');
+        //1. 회원가입 여부 확인
+        const { profile, email, has_email } = kakao_account;
+        const memberRow = await authDaoNew.getEmailIsAlreadyExist(
+          email,
+          has_email,
+          'kakao',
+          id,
+        );
+        console.log('[kakao] 회원가입 여부 확인합니다 memberRow = ', memberRow);
+        const { EXISTFLAG } = memberRow[0];
+        console.log("'[kakao] EXISTFLAG = ", EXISTFLAG);
+        let jwtToken = null;
+        let refreshToken = null;
+        //회원 가입 안되어있을시
+        if (EXISTFLAG === 'NONE') {
+          let { jwtToken: access, refreshToken: refresh } = await signUp({
+            id,
+            email,
+            nickname: nickname,
+            social: 'kakao',
+            isExist: true,
+          });
+          jwtToken = access;
+          refreshToken = refresh;
+          // 발급한 refresh token을 redis에 key를 user의 id로 하여 저장합니다.
+          await authDaoNew.setRefreshData({
+            id: `${id}_${email}`,
+            refreshToken,
+          });
+          const makedResponse = returnResponse({ res, jwtToken, refreshToken });
+          res.json(makedResponse);
+        }
+      }
+    }
+    if (cooperation === 'google') {
+      const { id, email, verified_email, picture } = userInfo;
+      if (id && email) {
+        //1. 회원가입 여부 확인
+        const memberRow = await authDaoNew.getEmailIsAlreadyExist(email);
+        const { EXISTFLAG } = memberRow[0];
+        let jwtToken = null;
+        let refreshToken = null;
+        //회원 가입 안되어있을시
+        if (EXISTFLAG === 'NONE') {
+          let { jwtToken: access, refreshToken: refresh } = await signUp({
+            id,
+            email,
+            nickname: nickname,
+            social: 'google',
+            isExist: false,
+          });
+          jwtToken = access;
+          refreshToken = refresh;
+          // 발급한 refresh token을 redis에 key를 user의 id로 하여 저장합니다.
+          //id 값이 중복되는 것을 방지하기 위해
+          //id_social값을 key로 사용한다.
+          await authDaoNew.setRefreshData({
+            id: `${id}_${email}`,
+            refreshToken,
+          });
+          const makedResponse = returnResponse({ res, jwtToken, refreshToken });
+          res.json(makedResponse);
+        }
+      }
+    }
+  } catch (e) {
+    console.log('error!', e);
+    res.json({
+      code: API_CODE.INTERNAL_ERROR,
+      reason: resMessage.INTERNAL_ERROR,
+      result: '',
+      accessToken: '',
+      // refreshToken,
+    });
+  }
+});
+
 /* 소셜 로그인시 
  1. 소셜 로그인시 가입이 되어있는지 확인
  1-1. 가입이 되어있다면 가입 이메일로 로그인
- 1-2. 가입이 안되어있다면 가입시켜주고 로그인 시켜주기  
+ 1-2. 가입이 안되어있다면 retrun
 */
 router.get('/callback/:cooperation', async (req, res) => {
   try {
@@ -200,7 +325,7 @@ router.get('/callback/:cooperation', async (req, res) => {
         break;
     }
 
-    // console.log('options= ', options);
+    console.log('options= ', options);
     const tokenInfo = await getAccessToken(options);
     console.log('token = ', tokenInfo);
 
@@ -286,6 +411,7 @@ router.get('/callback/:cooperation', async (req, res) => {
               result: '',
             };
             res.json(responseData);
+            return;
           } else if (EXISTFLAG === 'EXIST') {
             let { jwtToken: access, refreshToken: refresh } = await signUp({
               id,
@@ -320,9 +446,12 @@ router.get('/callback/:cooperation', async (req, res) => {
             const responseData = {
               code: API_CODE.INVALID_USER,
               reason: resMessage.INVALID_USER,
-              result: '',
+              result: {
+                access_token: tokenInfo.access_token,
+              },
             };
             res.json(responseData);
+            return;
             // let { jwtToken: access, refreshToken: refresh } = await signUp({
             //   id,
             //   email,
