@@ -88,11 +88,46 @@ router.get('/getWillList', async (req, res) => {
   try {
     const willInfo = await willDao.getWillList();
     const rows = helpers.makePaginate(req, willInfo);
+
+    rows.willList = rows.willList.map((will) => {
+      let answer_list = [];
+      if (will.QS_IDX && will.QS_ESSAY_ANS) {
+        const qsIndex = will.QS_IDX.split(',').map((qsIdx) => {
+          return { QUESTION_INDEX: qsIdx };
+        });
+        const qsEssayAns = will.QS_ESSAY_ANS.split(',').map((qsAns) => {
+          return { QS_ESSAY_ANS: qsAns };
+        });
+        answer_list = qsIndex.map((item, index) => {
+          return { ...item, ...qsEssayAns[index] };
+        });
+      }
+
+      return {
+        TITLE: will.TITLE,
+        CONTENT: will.CONTENT,
+        THUMBNAIL: will.THUMBNAIL,
+        EDIT_DATE: will.EDIT_DATE,
+        REG_DATE: will.REG_DATE,
+        IS_PRIVATE: will.IS_PRIVATE,
+        IS_DELETE: will.IS_DELETE,
+        MEM_IDX: will.MEM_IDX,
+        CONTENT_TYPE: will.CONTENT_TYPE,
+        WILL_ID: will.WILL_ID,
+        ANSWER_LIST: answer_list,
+      };
+    });
+
     const responseData = helpers.returnResponse(
       API_CODE.SUCCESS,
       resMessage.SUCCESS,
       rows,
     );
+
+    //responseData
+
+    //"QS_IDX": "1,2,3,4,5,6,7",
+    //"QS_ESSAY_ANS": "TEST 1,TEST 2,TEST 3,TEST 4,TEST 5,TEST 6,TEST 7"
 
     res.json(responseData);
   } catch (e) {
@@ -115,6 +150,7 @@ router.post('/insertWill', authMiddleware, async (req, res) => {
     thumbnail: req.body.thumbnail,
     mem_idx: req.body.mem_idx,
     will_id: req.body.will_id,
+    question_list: req.body.question_list,
   };
   try {
     const willInfo = await willDao.insertWill(parameter);
