@@ -55,13 +55,41 @@ router.get('/getWillCount', async (req, res) => {
 //내가 작성한 유서 가져오기
 router.get('/getMyWill', authMiddleware, async (req, res) => {
   const parameter = {
-    mem_userid: req.query.mem_userid,
-    mem_email: req.query.mem_email,
+    mem_idx: req.query.memIdx,
   };
 
   try {
     const willInfo = await willDao.getMyWill(parameter);
     const rows = helpers.makePaginate(req, willInfo);
+    rows.willList = rows.willList.map((will) => {
+      let answer_list = [];
+      if (will.QS_IDX && will.QS_ESSAY_ANS) {
+        const qsIndex = will.QS_IDX.split(',').map((qsIdx) => {
+          return { question_index: qsIdx };
+        });
+        const qsEssayAns = will.QS_ESSAY_ANS.split(',').map((qsAns) => {
+          return { question_answer: qsAns };
+        });
+        answer_list = qsIndex.map((item, index) => {
+          return { ...item, ...qsEssayAns[index] };
+        });
+      }
+
+      return {
+        TITLE: will.TITLE,
+        CONTENT: will.CONTENT,
+        THUMBNAIL: will.THUMBNAIL,
+        EDIT_DATE: will.EDIT_DATE,
+        REG_DATE: will.REG_DATE,
+        IS_PRIVATE: will.IS_PRIVATE,
+        IS_DELETE: will.IS_DELETE,
+        MEM_IDX: will.MEM_IDX,
+        CONTENT_TYPE: will.CONTENT_TYPE,
+        WILL_ID: will.WILL_ID,
+        ANSWER_LIST: answer_list,
+      };
+    });
+
     const responseData = helpers.returnResponse(
       API_CODE.SUCCESS,
       resMessage.SUCCESS,
@@ -115,10 +143,10 @@ router.get('/getWillList', async (req, res) => {
       let answer_list = [];
       if (will.QS_IDX && will.QS_ESSAY_ANS) {
         const qsIndex = will.QS_IDX.split(',').map((qsIdx) => {
-          return { QUESTION_INDEX: qsIdx };
+          return { question_index: qsIdx };
         });
         const qsEssayAns = will.QS_ESSAY_ANS.split(',').map((qsAns) => {
-          return { QS_ESSAY_ANS: qsAns };
+          return { question_answer: qsAns };
         });
         answer_list = qsIndex.map((item, index) => {
           return { ...item, ...qsEssayAns[index] };

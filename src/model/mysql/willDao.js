@@ -53,6 +53,9 @@ const getWillList = async (parameter) => {
         IS_PRIVATE, 
         IS_DELETE, 
         MEM_IDX, 
+        (SELECT MEM_NICKNAME  
+          FROM IIDT_MEMBER IM
+          WHERE IM.MEM_IDX = WL.MEM_IDX ) as MEM_NICKNAME,   
         CONTENT_TYPE,
         WL.WILL_ID,
         GROUP_CONCAT(QS_IDX  ORDER BY QS_IDX ) AS QS_IDX,
@@ -60,6 +63,7 @@ const getWillList = async (parameter) => {
       FROM WILL WL
       LEFT JOIN WILL_ESSAY_ANSWER WL_E_A ON WL.WILL_ID = WL_E_A.WILL_ID WHERE WL.IS_PRIVATE=FALSE
       GROUP BY WL.WILL_ID
+      ORDER BY WL.REG_DATE DESC
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
@@ -102,22 +106,33 @@ const getWill = async (parameter) => {
 };
 
 const getMyWill = async (parameter) => {
-  const mem_userid = parameter.mem_userid;
+  const mem_idx = parameter.mem_idx;
 
   const getMyWillSql = `
-    SELECT *
-    FROM WILL
-    WHERE MEM_IDX = (
-        SELECT MEM_IDX
-        FROM IIDT_MEMBER
-        WHERE MEM_USERID = ?
-    )
-    ORDER BY REG_DATE DESC
+      SELECT SQL_CALC_FOUND_ROWS TITLE,
+      CONTENT,
+      THUMBNAIL, 
+      EDIT_DATE, 
+      REG_DATE, 
+      IS_PRIVATE, 
+      IS_DELETE, 
+      MEM_IDX,
+      (SELECT MEM_NICKNAME  
+        FROM IIDT_MEMBER IM
+        WHERE IM.MEM_IDX = WL.MEM_IDX ) as MEM_NICKNAME,   
+      CONTENT_TYPE,
+            WL.WILL_ID,
+      GROUP_CONCAT(QS_IDX  ORDER BY QS_IDX ) AS QS_IDX ,
+            GROUP_CONCAT(QS_ESSAY_ANS ORDER BY QS_IDX) AS QS_ESSAY_ANS
+    FROM WILL WL
+    LEFT JOIN WILL_ESSAY_ANSWER WL_E_A ON WL.WILL_ID = WL_E_A.WILL_ID WHERE WL.IS_PRIVATE=FALSE AND WL.MEM_IDX = ?
+    GROUP BY WL.WILL_ID
+    ORDER BY WL.REG_DATE DESC
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
     //await connection.beginTransaction(); // START TRANSACTION
-    let [willInfo] = await connection.query(getMyWillSql, [mem_userid]);
+    let [willInfo] = await connection.query(getMyWillSql, [mem_idx]);
     await connection.commit(); // COMMIT
     connection.release();
     console.log('success Query SELECT');
