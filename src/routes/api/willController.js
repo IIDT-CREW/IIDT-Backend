@@ -7,6 +7,28 @@ const willDao = require('../../model/mysql/willDao');
 const { API_CODE } = require('../../lib/statusCode');
 const resMessage = require('../../lib/resMessage');
 const authMiddleware = require('../../middlewares/auth');
+
+router.get('/getWillQuestion', async (req, res) => {
+  try {
+    const willInfo = await willDao.getWillQuestion();
+
+    const responseData = helpers.returnResponse(
+      API_CODE.SUCCESS,
+      resMessage.SUCCESS,
+      willInfo,
+    );
+    res.json(responseData);
+  } catch (e) {
+    console.log(e);
+    const responseData = helpers.returnResponse(
+      API_CODE.INTERNAL_ERROR,
+      resMessage.INTERNAL_ERROR,
+      null,
+    );
+    res.json(responseData);
+  }
+});
+
 //
 router.get('/getWillCount', async (req, res) => {
   try {
@@ -150,7 +172,9 @@ router.post('/insertWill', authMiddleware, async (req, res) => {
     thumbnail: req.body.thumbnail,
     mem_idx: req.body.mem_idx,
     will_id: req.body.will_id,
-    question_list: req.body.question_list,
+    is_private: req.body.is_private,
+    content_type: req.body.content_type,
+    answer_list: req.body?.answer_list,
   };
   try {
     const willInfo = await willDao.insertWill(parameter);
@@ -162,6 +186,7 @@ router.post('/insertWill', authMiddleware, async (req, res) => {
 
     res.json(responseData);
   } catch (e) {
+    console.log(e);
     const responseData = helpers.returnResponse(
       API_CODE.INTERNAL_ERROR,
       resMessage.INTERNAL_ERROR,
