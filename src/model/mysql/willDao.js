@@ -85,9 +85,26 @@ const getWillList = async (parameter) => {
 const getWill = async (parameter) => {
   const will_id = parameter.will_id;
   const getWillSql = `
-    select *
-    from WILL
-    WHERE WILL_ID = ?
+    SELECT SQL_CALC_FOUND_ROWS TITLE,
+      CONTENT,
+      THUMBNAIL, 
+      EDIT_DATE, 
+      REG_DATE, 
+      IS_PRIVATE, 
+      IS_DELETE, 
+      MEM_IDX,
+      (SELECT MEM_NICKNAME  
+        FROM IIDT_MEMBER IM
+        WHERE IM.MEM_IDX = WL.MEM_IDX ) as MEM_NICKNAME,   
+      CONTENT_TYPE,
+            WL.WILL_ID,
+      GROUP_CONCAT(QS_ESSAY_IDX ORDER BY QS_IDX ) AS QS_ESSAY_IDX,
+      GROUP_CONCAT(QS_IDX  ORDER BY QS_IDX ) AS QS_IDX ,
+      GROUP_CONCAT(QS_ESSAY_ANS ORDER BY QS_IDX) AS QS_ESSAY_ANS
+    FROM WILL WL
+    LEFT JOIN WILL_ESSAY_ANSWER WL_E_A ON WL.WILL_ID = WL_E_A.WILL_ID WHERE WL.IS_PRIVATE=FALSE AND WL.WILL_ID = ?
+    GROUP BY WL.WILL_ID
+    ORDER BY WL.REG_DATE DESC
   `;
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
@@ -162,32 +179,18 @@ const insertWill = async (parameter) => {
   const content_type = parameter.content_type;
   const is_private = parameter.is_private;
   let answer_list = parameter?.answer_list;
-  console.log(answer_list);
+
   const insertWillSql = `
     INSERT INTO WILL (TITLE, CONTENT, THUMBNAIL, REG_DATE, IS_PRIVATE, MEM_IDX, WILL_ID, CONTENT_TYPE ) 
     VALUES (?, ?, ?, now(), ?, ?, ?, ? );
   `;
-  let bindVariable = '';
-  let queryArray = [];
+
   if (answer_list) {
     answer_list = answer_list?.map((item) => {
       return [item.qs_idx, item.qs_essay_answer, will_id];
-      // return item.qs_idx, item.qs_eseay_ans, will_id;
     });
-    //queryArray = answer_list.flat();
-
-    // answer_list.forEach((item, index) => {
-    //   if (answer_list.length === index + 1) {
-    //     bindVariable = `(?, ?, ?)`;
-    //   } else {
-    //     bindVariable = `(?, ?, ?),`;
-    //   }
-    // });
   }
-  console.log('queryArray= ', queryArray);
-  console.log('answer_list= ', answer_list);
-  console.log('bindVariable-= ', bindVariable);
-  console.log('content_type = ', content_type);
+
   const insertWillEssayAnswer = `
 	  INSERT INTO WILL_ESSAY_ANSWER (QS_IDX, QS_ESSAY_ANS, WILL_ID)
     VALUES ? `;
@@ -254,11 +257,37 @@ const updateWill = async (parameter) => {
   const will_id = parameter.will_id;
   const content_type = parameter.content_type;
   const is_private = parameter.is_private;
+  let answer_list = parameter?.answer_list;
+
   const updateWillSql = `
     UPDATE WILL 
-    SET TITLE = ?, CONTENT = ?, THUMBNAIL =? , REG_DATE =now(),  IS_PRIVATE =?,  MEM_IDX =?,  WILL_ID=?, CONTENT_TYPE=? 
+    SET TITLE = ?, 
+    CONTENT = ?, 
+    THUMBNAIL =? , 
+    EDIT_DATE =now(),  
+    IS_PRIVATE =?,  
+    MEM_IDX =?,  
+    WILL_ID=?, 
+    CONTENT_TYPE=? 
     WHERE WILL_ID = ? 
   `;
+
+  if (answer_list) {
+    answer_list = answer_list?.map((item) => {
+      return [item.qs_essay_idx, item.qs_idx, item.qs_essay_answer, will_id];
+    });
+  }
+  console.log('answer_list ', answer_list);
+  const insertWillEssayAnswer = `
+	  INSERT INTO WILL_ESSAY_ANSWER (QS_ESSAY_IDX, QS_IDX, QS_ESSAY_ANS, WILL_ID)
+    VALUES ? 
+    ON DUPLICATE KEY UPDATE 
+		QS_ESSAY_IDX= VALUES(QS_ESSAY_IDX),
+		QS_ESSAY_ANS= VALUES(QS_ESSAY_ANS),
+		QS_IDX = VALUES(QS_IDX),
+    WILL_ID = VALUES(WILL_ID);
+  `;
+
   const connection = await dbHelpers.pool.getConnection(async (conn) => conn);
   try {
     //await connection.beginTransaction(); // START TRANSACTION
@@ -272,6 +301,13 @@ const updateWill = async (parameter) => {
       content_type,
       will_id,
     ]);
+
+    if (content_type === 1) {
+      let [insertEassyAnswerInfo] = await connection.query(
+        insertWillEssayAnswer,
+        [answer_list],
+      );
+    }
     await connection.commit(); // COMMIT
     connection.release();
     console.log('success Query SELECT');

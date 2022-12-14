@@ -114,12 +114,28 @@ router.get('/getWill', async (req, res) => {
   };
 
   try {
-    const willInfo = await willDao.getWill(parameter);
+    const will = await willDao.getWill(parameter);
+    let answer_list = [];
+    if (will.QS_ESSAY_IDX && will.QS_IDX && will.QS_ESSAY_ANS) {
+      const qsEssayIdx = will.QS_ESSAY_IDX.split(',').map((qsEssayIdx) => {
+        return { question_essay_index: qsEssayIdx };
+      });
+      const qsIndex = will.QS_IDX.split(',').map((qsIdx) => {
+        return { question_index: qsIdx };
+      });
+      const qsEssayAns = will.QS_ESSAY_ANS.split(',').map((qsAns) => {
+        return { question_answer: qsAns };
+      });
+      answer_list = qsIndex.map((item, index) => {
+        return { ...item, ...qsEssayAns[index], ...qsEssayIdx[index] };
+      });
+    }
+    will.ANSWER_LIST = answer_list;
 
     const responseData = helpers.returnResponse(
       API_CODE.SUCCESS,
       resMessage.SUCCESS,
-      willInfo,
+      will,
     );
 
     res.json(responseData);
@@ -232,6 +248,9 @@ router.post('/updateWill', authMiddleware, async (req, res) => {
     thumbnail: req.body.thumbnail,
     mem_idx: req.body.mem_idx,
     will_id: req.body.will_id,
+    is_private: req.body.is_private,
+    content_type: req.body.content_type,
+    answer_list: req.body?.answer_list,
   };
   try {
     const willInfo = await willDao.updateWill(parameter);
